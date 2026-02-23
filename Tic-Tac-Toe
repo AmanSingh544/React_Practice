@@ -1,0 +1,184 @@
+import React, { useState } from 'react'
+import "./App.css";
+
+export default function App() {
+  const [board, setBoard] = useState(Array.from({ length: 9 }).fill(null));
+  const [winner, setWinner] = useState(null);
+  const [matchPos, setMatchPos] = useState(null);
+  const [user, setUser] = useState(true); // user 1: X---- user 2 : O;
+
+  const Reset = () => {
+    setBoard(Array.from({ length: 9 }).fill(null));
+    setWinner(null);
+    setMatchPos(null);
+    setUser(true)
+  };
+
+  const handleClick = (index) => {
+    if (board[index] || winner) return;
+
+    const temp = [...board];
+    temp[index] = user ? "X" : "O";
+    setBoard(temp);
+    setUser(!user);
+    checkWinner(temp);
+  };
+
+  const winnerLine = [
+    { type: "row-0", indexes: [0, 1, 2] },
+    { type: "row-1", indexes: [3, 4, 5] },
+    { type: "row-2", indexes: [6, 7, 8] },
+
+    { type: "column-0", indexes: [0, 3, 6] },
+    { type: "column-1", indexes: [1, 4, 7] },
+    { type: "column-2", indexes: [2, 5, 8] },
+
+    { type: "diag-0", indexes: [0, 4, 8] },
+    { type: "diag-1", indexes: [2, 4, 6] },
+  ];
+
+  const checkWinner = (board) => {
+    for (let line of winnerLine) {
+      const [a, b, c] = line.indexes;
+      if (board[a] && (board[a] === board[b]) && (board[a] === board[c])) {
+        setWinner(board[a]);
+        setMatchPos(line.type)
+        return;
+      };
+    }
+  };
+
+  return (
+    <>
+      <div className="container">
+        <div className="board">
+          {
+            board.map((cell, index) => {
+              return (
+                <div key={index} className="cell"
+                  onClick={(e) => { e.preventDefault(); handleClick(index) }}>
+                  {cell}
+                </div>
+              );
+            })
+          }
+          {matchPos && <div className={`line ${matchPos}`}></div>}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {
+          winner && <p ><b>Winner is : {winner}</b></p>
+        }
+      </div>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+          <button onClick={Reset} style={{padding:"5px", cursor:"pointer"}} >
+            Reset</button>
+      </div>
+    </>
+  )
+}
+
+{/** 
+// App.css
+
+
+.container {
+  align-items: center;
+  position: relative;
+  width: 300px;
+  margin: 20px auto;
+  border: 2px solid green;
+
+
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 300px;
+  width: 300px;
+
+
+}
+
+.cell {
+  background-color: blue;
+  border: 2px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: x-large;
+  color: white;
+}
+
+.line {
+  position: absolute;
+  background-color: red;
+  height: 4px;
+  width: 0;
+  left: 0;
+  animation: drawLineH 0.3s forwards;
+}
+
+/* horizontal lines*/
+.row-0 {  top: 50px }
+.row-1 {  top: 150px }
+.row-2 {  top: 250px }
+
+/* vertical lines*/
+.column-0 {
+  width:4px;
+  height: 0;
+  left:50px;
+  animation: drawLineV 0.3s forwards;
+}
+.column-1 {
+  width:4px;
+  height: 0;
+  left:150px;
+  animation: drawLineV 0.3s forwards;
+}
+.column-2 {
+  width:4px;
+  height: 0;
+  left:250px;
+  animation: drawLineV 0.3s forwards;
+}
+
+/*  diagonals*/
+
+.diag-0{
+  height: 4px;
+  left: -50px;
+  top: 150px;
+  transform: rotate(45deg);
+  animation: drawLineD 0.3s forwards;
+}
+
+.diag-1{
+  height: 4px;
+  top: 150px;
+  left: -50px;
+  transform: rotate(-45deg);
+  animation: drawLineD 0.3s forwards;
+}
+
+@keyframes drawLineH {
+  from { width: 0}
+  to { width: 300px}
+}
+
+@keyframes drawLineD {
+  from { width: 0}
+  to { width: 400px}
+}
+
+@keyframes drawLineV {
+  from { height: 0}
+  to { height: 300px}
+}
+ 
+
+*/
