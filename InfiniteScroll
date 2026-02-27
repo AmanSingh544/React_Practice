@@ -1,0 +1,95 @@
+import React, { useState, useEffect, useRef } from 'react'
+
+// Main App
+export default function App() {
+  const [list, setList] = useState([]);
+  const [isloading, setIsloading] = useState(false);
+  const [page, setPage] = useState(0);
+  const sentinelRef = useRef(null);
+  const isLoadingRef = useRef(false);
+
+  const fetchData = async () => {
+    setIsloading(true);
+    try {
+      const res = await fetch(`https://api.escuelajs.co/api/v1/products?offset=${page}&limit=10`);
+      const data = await res.json();
+      setList(prev => [...prev, ...data]);
+    }
+    catch (err) {
+      console.error(err);
+    }
+    finally {
+      setIsloading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [page]);
+
+  useEffect(() => {
+    isLoadingRef.current = isloading;
+  }, [isloading]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !isLoadingRef.current) {
+        setPage(prev => prev + 1);
+      }
+    },
+      {
+        root: null,
+        rootMargin: "500px",
+        threshold: 0.1
+      });
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => {
+      observer.disconnect(); // clean up
+    }
+  }, []);
+
+  const renderItems = (item) => {
+    return (
+      <div style={{ border: "1px solid white", borderRadius: "5px", padding: "10px" }} key={item.id}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+          {
+            item.images?.map(x => {
+              return (
+                <div key={`${item.id}-${x}`} style={{ border: "2px solid black", borderRadius: "5px" }}>
+                  <img src={x} height="100px" width="100px" />
+                </div>
+              )
+            })
+          }
+        </div>
+        <div style={{fontSize: "10px"}}>
+          <h3>{item.title}</h3>
+        <p>Price: <b>₹ {item.price}</b></p>
+        <p>Description: {item.description?.substring(0, 100)}</p>
+        </div>
+      </div>
+    )
+  };
+
+  return (
+    <>
+      <div style={{
+        height: "100rem",
+        overflowY: "auto",
+        border: "1px solid green",
+        display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "20px"
+      }}>
+        {
+          list.map(renderItems)
+        }
+        <div ref={sentinelRef}></div>
+        {isloading && <p style={{ gridColumn: "1 / -1" }}>Loading...</p>}
+      </div>
+    </>
+  )
+}
