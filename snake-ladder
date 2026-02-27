@@ -1,147 +1,222 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useMemo } from "react";
 import "./app.css";
-// Main App
+
 export default function App() {
-  const [board, setBoard] = useState(Array.from({ length: 100 }, (_, i) => { return { index: 100 - i, color: "" } }));
-  const [dice, setDice] = useState(0);
-  const [turn, setTurn] = useState(true); // means user 1
+  const snakes = [
+    { head: 50, tail: 17 },
+    { head: 75, tail: 32 },
+    { head: 97, tail: 15 },
+  ];
+
   const [users, setUsers] = useState([
-    {
-      user: "1",
-      name: "Aman",
-      color: "red",
-      pos: 1
-    },
-    {
-      user: "2",
-      name: "Himanshu",
-      color: "blue",
-      pos: 2
-    }]);
+    { id: 1, name: "Aman", color: "red", pos: 1 },
+    { id: 2, name: "Himanshu", color: "blue", pos: 1 },
+  ]);
+  const [isMoving, setIsMoving] = useState(false);
 
-  const rollDice = () => {
-    const rand = Math.floor(Math.random() * 6) + 1;
-    const newUsers = [...users];
-    let board = null;
-    if (turn) {
-      board = clearPreviousPosition(newUsers[0]);
-      newUsers[0].pos = newUsers[0].pos + rand;
-    }
-    else {
-      board = clearPreviousPosition(newUsers[1]);
-      newUsers[1].pos = newUsers[1].pos + rand;
-    }
+  const [turn, setTurn] = useState(0); // 0 -> user1, 1 -> user2
+  const [dice, setDice] = useState(null);
 
-    setTurn(!turn);
-    setUsers(newUsers)
-    setDice(rand);
-    const newBoard = run(board, newUsers);
-    markPostion(newBoard, newUsers);
-  }
+  // const rollDice = () => {
+  //   if(isMoving) return ;
 
-  const clearPreviousPosition = (user) => {
-    const newBoard = [...board];
-    const tempcell = newBoard[100 - user.pos];
-    newBoard[100 - user.pos] = { ...tempcell, color: "" };
-    return (newBoard);
-  }
+  //   const rand = Math.floor(Math.random() * 6) + 1;
+  //   setDice(rand);
+  //   setIsMoving(true);
 
-  const markPostion = (newBoard = board, newUsers = users) => {
-    const user1 = newUsers[0];
-    const user2 = newUsers[1];
-    newBoard[100 - user1.pos] = { ...newBoard[100 - user1.pos], index: user1.pos, color: user1.color };
-    newBoard[100 - user2.pos] = { ...newBoard[100 - user2.pos], index: user2.pos, color: user2.color };
+    
 
-    setBoard(newBoard);
-  };
+  //   setUsers((prev) => {
+  //     const updated = prev.map((u) => ({ ...u })); // maade a copy of previous users
+  //     const currentUser = updated[turn];
 
-  const run = useCallback((newBoard = board, newUsers = users) => {
-    const user1 = newUsers[0];
-    const user2 = newUsers[1];
-    if (turn) // means user 1 turn
-    {
-      const tempcell = newBoard[100 - user1.pos + dice];
-      if (tempcell.snake) {
-        debugger
-        newBoard[100 - user1.pos] = { index: tempcell.snake.tail, color: user1.color };
+  //     let newPos = currentUser.pos + rand;
+
+  //     // Over 100 rule
+  //     if (newPos > 100) return updated;
+
+  //     // Snake check
+  //     const snake = snakes.find((s) => s.head === newPos);
+  //     if (snake) newPos = snake.tail;
+
+  //     currentUser.pos = newPos;
+  //     return updated;
+  //   });
+
+  //   setTurn((t) => (t === 0 ? 1 : 0));
+  // };
+const rollDice = () => {
+  if (isMoving) return;
+
+  const rand = Math.floor(Math.random() * 6) + 1;
+  setDice(rand);
+  setIsMoving(true);
+
+  let steps = 0;
+
+  const interval = setInterval(() => {
+    setUsers(prev => {
+      const updated = prev.map(u => ({ ...u }));
+      const current = updated[turn];
+
+      if (steps === rand) {
+        clearInterval(interval);
+
+        // snake check AFTER movement
+        const snake = snakes.find(s => s.head === current.pos);
+        if (snake) {
+          current.pos = snake.tail;
+        }
+
+        setTurn(t => (t === 0 ? 1 : 0));
+        setIsMoving(false);
+        return updated;
       }
-      else
-        newBoard[100 - user1.pos] = { index: user1.pos + dice, color: user1.color };
-    }
-    else {
-      const tempcell = newBoard[100 - user2.pos + dice];
-      if (tempcell.snake) {
-        debugger
-        newBoard[100 - user2.pos] = { index: tempcell.snake.tail, color: user1.color };
+
+      if (current.pos < 100) {
+        current.pos += 1;
       }
-      else
-        newBoard[100 - user2.pos] = { index: user2.pos + dice, color: user2.color };
-    }
-    return newBoard;
-  }, [board, users, turn]);
 
-  const snakes = [{ head: 50, tail: 17 }, { head: 75, tail: 32 }, { head: 97, tail: 15 }]
-
-  useEffect(() => {
-    const newBoard = [...board];
-    snakes.map(item => {
-      const tempCell = newBoard[100 - item.head];
-      newBoard[100 - item.head] = { ...tempCell, snake: item }
+      steps++;
+      return updated;
     });
-    markPostion(newBoard);
-  }, []);
+  }, 300); // speed (ms)
+};
+  // ✅ Board derived from users (NO board state)
+  const board = useMemo(() => {
+    return Array.from({ length: 100 }, (_, i) => {
+      const index = 100 - i;
+      const userHere = users.find((u) => u.pos === index);
+      const snakeHere = snakes.find((s) => s.head === index);
 
-  useEffect(() => {
-    setTimeout(() => setDice(""), 2000);
-  }, [dice]);
-
+      return {
+        index,
+        color: userHere?.color || "",
+        snake: snakeHere,
+      };
+    });
+  }, [users]);
 
   return (
-    <>
-      <div className="main">
-        <div className="container" >
-          <div className="board" >
-            {
-              board.map((cell, i) =>
-              (
-                <div className="cell" key={i} >
-                  {
-                    cell.snake && (
-                      <img src={"https://cdn-icons-png.flaticon.com/512/616/616487.png"} height="20px" width="20px" />
-                    )
-                  }
-                  {console.log(cell.snake)}
-                  {cell.index}
-                  <p className={`dot-user ${cell.color}`}></p>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-        <div>
-          <div className="roll-dice">
-            <b>{turn ? "USER 1" : "USER 2"} Turn </b>
-            <br />
-            <button onClick={rollDice} style={{
-              borderRadius: "5px",
-              cursor: "pointer", background: "orange", padding: "5px"
-            }}>
-              Roll Dice
-            </button>
-            : {dice}
-          </div>
-          <div className="users">
-            {
-              users.map(item => (
-                <div style={{ display: "inline" }}>
-                  <p className={`dot-user ${item.color}`}></p> User {item.user} : {item.name}
-                </div>
-              ))
-            }
-
-          </div>
+    <div className="main">
+      <div className="container">
+        <div className="board">
+          {board.map((cell, i) => (
+            <div key={i} className={`cell ${cell.color}`}>
+              {cell.snake && (
+                <img
+                  src="https://cdn-icons-png.flaticon.com/512/616/616487.png"
+                  alt="snake"
+                  height="20"
+                  width="20"
+                />
+              )}
+              <span>{cell.index}</span>
+              {cell.color && <div className={`dot-user ${cell.color}`} />}
+            </div>
+          ))}
         </div>
       </div>
-    </>
-  )
+
+      <div className="side">
+        <div className="roll-dice">
+          <b>{users[turn].name}'s Turn</b>
+          <br />
+          <button onClick={rollDice} disabled={isMoving}>
+            Roll Dice
+          </button>          
+          <div className="dice-value">{dice}</div>
+        </div>
+
+        <div className="users">
+          {users.map((u) => (
+            <div key={u.id} className="user-row">
+              <span className={`dot-user ${u.color}`} />
+              {u.name} : {u.pos}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
+
+
+/**
+
+.container {
+  border: 1px solid green;
+  margin: 2rem;
+  width: 50rem;
+}
+
+.main {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  background-color: aqua;
+  border: 1px solid black;
+  height: 50px;
+  justify-content: center;
+  align-items: center;
+  font-size: 10px;
+}
+
+.roll-dice {
+  width: 15rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: bisque;
+}
+
+.roll-dice button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  background: orange;
+  border: none;
+}
+
+.dice-value {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.dot-user {
+  border: 2px solid white;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+
+.red {
+  background-color: red;
+}
+
+.blue {
+  background-color: blue;
+}
+
+.users {
+  margin-top: 20px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+ */
