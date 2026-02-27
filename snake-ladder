@@ -1,0 +1,183 @@
+import React, { useState, useEffect } from 'react'
+import "./app.css";
+// Main App
+export default function App() {
+  const [board, setBoard] = useState(Array.from({ length: 100 }, (_, i) => { return { index: 100 - i, color: "" } }));
+  const [dice, setDice] = useState("");
+  const [turn, setTurn] = useState(true); // means user 1
+  const [users, setUsers] = useState([
+    {
+      user: "1",
+      name: "Aman",
+      color: "red",
+      pos: 1
+    },
+    {
+      user: "2",
+      name: "Himanshu",
+      color: "blue",
+      pos: 2
+    }]);
+
+  const rollDice = () => {
+    const rand = Math.floor(Math.random() * 6) + 1;
+    const newUsers = [...users];
+
+    if (turn) {
+      clearPreviousPosition(newUsers[0]);
+      newUsers[0].pos = newUsers[0].pos + rand;
+    }
+    else {
+      clearPreviousPosition(newUsers[1]);
+      newUsers[1].pos = newUsers[1].pos + rand;
+    }
+
+    setTurn(!turn);
+    setUsers(newUsers)
+    setDice(rand);
+  }
+
+  const clearPreviousPosition = (user) => {
+    const newBoard = [...board];
+    const tempcell = newBoard[100 - user.pos];
+    newBoard[100 - user.pos] = { ...tempcell, color: "" };
+    setBoard(newBoard);
+  }
+
+  const markPostion = (boardP = board) => {
+    const newBoard = [...boardP];
+    const user1 = users[0];
+    const user2 = users[1];
+    newBoard[100 - user1.pos] = { index: user1.pos, color: user1.color };
+    newBoard[100 - user2.pos] = { index: user2.pos, color: user2.color };
+
+    setBoard(newBoard);
+  };
+
+  const run = () => {
+    debugger
+    const newBoard = [...board];
+    const user1 = users[0];
+    const user2 = users[1];
+    if (turn) // means user 1 turn
+    {
+      newBoard[100 - user1.pos] = { index: user1.pos + dice, color: user1.color };
+    }
+    else {
+      newBoard[100 - user2.pos] = { index: user2.pos + dice, color: user2.color };
+    }
+    return newBoard;
+  };
+
+  useEffect(() => {
+    markPostion();
+  }, []);
+
+  useEffect(() => {
+    debugger
+    const newBoard = run();
+    markPostion(newBoard);
+    setTimeout(() => setDice(""), 2000);
+  }, [dice]);
+
+  return (
+    <>
+      <div className="main">
+        <div className="container" >
+          <div className="board" >
+            {
+              board.map((cell, i) =>
+              (
+                <div className="cell" key={i} >
+                  {cell.index}
+                  <p className={`dot-user ${cell.color}`}></p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+        <div>
+          <div className="roll-dice">
+            <b>{turn ? "USER 1" : "USER 2"} Turn </b>
+            <br />
+            <button onClick={rollDice} style={{
+              borderRadius: "5px",
+              cursor: "pointer", background: "orange", padding: "5px"
+            }}>
+              Roll Dice
+            </button>
+            : {dice}
+          </div>
+          <div className="users">
+            {
+              users.map(item => (
+                <div style={{ display: "inline" }}>
+                  <p className={`dot-user ${item.color}`}></p> User {item.user} : {item.name}
+                </div>
+              ))
+            }
+
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+/**
+
+.container {
+  border: 1px solid green;
+  margin: 2rem 2rem;
+  height: auto;
+  width: 50rem;
+}
+
+.main {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.cell {
+  display: flex;
+  background-color: aqua;
+  border: 2px solid black;
+  padding: 1rem;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: small;
+  color: white"
+}
+
+.roll-dice{
+  margin-top: 2rem;
+  height: "3rem";
+  width: "2rem";
+  padding: 10px;
+  background-color: bisque;
+  color:black
+}
+
+.dot-user {
+  height: 10px;
+  width: 10px;
+}
+.blue{
+  background-color: blue;
+}
+.red{
+  background-color: red;
+}
+
+.button {
+  cursor: pointer;
+}
+
+*/
